@@ -7,9 +7,9 @@
 	<name>JumpPads</name>
 
 	<dependencies>
-		<!-- Spigot -->
+		<!-- Spigot LOCAL -->
 		<dependency>
-			<groupId>de.knox</groupId>
+			<groupId>org.spigot</groupId>
 			<artifactId>spigot</artifactId>
 			<version>1.8.8</version>
 			<type>jar</type>
