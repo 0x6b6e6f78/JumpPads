@@ -31,4 +31,9 @@ public class SortedMap<K, V> {
 	public List<V> values() {
 		return values;
 	}
+
+	public void clear() {
+		keys.clear();
+		values.clear();
+	}
 }

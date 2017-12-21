@@ -16,9 +16,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.util.Vector;
 
 import de.knox.jp.JumpPads;
+import de.knox.jp.json.JsonJumpPads.JumpPadMetadata;
 import de.knox.jp.utilities.ItemUtils;
-import de.knox.jp.utilities.JumpPadEvent;
-import de.knox.jp.utilities.JsonJumpPads.JumpPadMetadata;
 import net.minecraft.server.v1_8_R3.BlockPosition;
 
 public class JumpListener implements Listener {

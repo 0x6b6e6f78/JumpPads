@@ -20,11 +20,13 @@ import org.bukkit.inventory.ItemStack;
 import com.google.common.collect.Lists;
 
 import de.knox.jp.JumpPads;
+import de.knox.jp.json.JsonJumpPads;
+import de.knox.jp.json.JsonJumpPads.JumpPadMetadata;
 import de.knox.jp.utilities.ItemUtils;
-import de.knox.jp.utilities.JsonJumpPads;
-import de.knox.jp.utilities.JsonJumpPads.JumpPadMetadata;
+import de.knox.jp.utilities.Language;
 import de.knox.jp.utilities.Utils;
 import de.knox.jp.utilities.inventories.EffectItems;
+import de.knox.jp.utilities.inventories.LanguageItems;
 import de.knox.jp.utilities.inventories.SoundItems;
 import lombok.Getter;
 import net.minecraft.server.v1_8_R3.BlockPosition;
@@ -46,6 +48,9 @@ public class JumpPadsSettingListener implements Listener {
 	@Getter
 	private static boolean lightSave;
 
+	@Getter
+	private static final String INVENTORY_NAME;
+
 	static {
 		rawUp = ItemUtils.getSkull(
 				"eyJ0aW1lc3RhbXAiOjE1MTM2ODE1OTgxNjIsInByb2ZpbGVJZCI6ImZlZjAzOWVmZTZjZDQ5ODc5Yzg0MjZhM2U2MTM0Mjc3IiwicHJvZmlsZU5hbWUiOiJNSEZfQXJyb3dVcCIsInNpZ25hdHVyZVJlcXVpcmVkIjp0cnVlLCJ0ZXh0dXJlcyI6eyJTS0lOIjp7InVybCI6Imh0dHA6Ly90ZXh0dXJlcy5taW5lY3JhZnQubmV0L3RleHR1cmUvZDQ4Yjc2OGM2MjM0MzJkZmIyNTlmYjNjMzk3OGU5OGRlYzExMWY3OWRiZDZjZDg4ZjIxMTU1Mzc0YjcwYjNjIn19fQ==",
@@ -63,6 +68,8 @@ public class JumpPadsSettingListener implements Listener {
 				"eyJ0aW1lc3RhbXAiOjE1MTM3OTcwNDE3MzUsInByb2ZpbGVJZCI6IjUwYzg1MTBiNWVhMDRkNjBiZTlhN2Q1NDJkNmNkMTU2IiwicHJvZmlsZU5hbWUiOiJNSEZfQXJyb3dSaWdodCIsInRleHR1cmVzIjp7IlNLSU4iOnsidXJsIjoiaHR0cDovL3RleHR1cmVzLm1pbmVjcmFmdC5uZXQvdGV4dHVyZS8xYjZmMWEyNWI2YmMxOTk5NDY0NzJhZWRiMzcwNTIyNTg0ZmY2ZjRlODMyMjFlNTk0NmJkMmU0MWI1Y2ExM2IifX19",
 				null);
 		lightSave = false;
+
+		INVENTORY_NAME = "§6JumpPads";
 	}
 
 	@EventHandler
@@ -167,7 +174,7 @@ public class JumpPadsSettingListener implements Listener {
 			} else if (state.equals("sound") || state.equals("particle")) {
 				int page = Integer.parseInt(ItemUtils.getNBTDataTag(slot8, "page"));
 				try {
-					page = Integer.parseInt(ItemUtils.getNBTDataTag(event.getCurrentItem(), "page"));
+					page = Integer.parseInt(ItemUtils.getNBTDataTag(stack, "page"));
 				} catch (Exception e) {
 					String name = ItemUtils.getNBTDataTag(stack, state);
 					if (name.equals("NONE"))
@@ -180,12 +187,28 @@ public class JumpPadsSettingListener implements Listener {
 					updateSound(event.getClickedInventory(), metadata, page);
 				else
 					updateParticle(event.getClickedInventory(), metadata, page);
+			} else if (state.equals("languages")) {
+				int page = Integer.parseInt(ItemUtils.getNBTDataTag(slot8, "page"));
+				try {
+					page = Integer.parseInt(ItemUtils.getNBTDataTag(stack, "page"));
+				} catch (Exception e) {
+					Language language = Language.valueOf(ItemUtils.getNBTDataTag(stack, "languages"));
+					JumpPads.getInstance().setLanguage(language);
+					JumpPads.getInstance().getConfig().set("language",
+							JumpPads.getInstance().getLanguage().name().toLowerCase());
+					JumpPads.getInstance().saveConfig();
+				}
+				SoundItems.load();
+				EffectItems.load();
+				LanguageItems.load();
+				updateLanguages(event.getClickedInventory(), metadata, page);
+				updateHeadLine(event.getClickedInventory(), metadata);
 			}
 		}
 	}
 
 	public static Inventory getInventory(Location location) {
-		Inventory inventory = Bukkit.createInventory(null, 5 * 9, "§6JumpPads");
+		Inventory inventory = Bukkit.createInventory(null, 5 * 9, INVENTORY_NAME);
 		JumpPadMetadata metadata = JumpPads.getInstance().getMetadatas().get(location);
 		updateLowerInventory(inventory, metadata, metadata.getString("state"));
 		return inventory;
@@ -201,21 +224,29 @@ public class JumpPadsSettingListener implements Listener {
 
 	public static void updateHeadLine(Inventory inventory, JumpPadMetadata metadata, String state, int page) {
 		boolean isPad = metadata.getBoolean("jumppad");
-		ItemStack isPadItem = ItemUtils.setNBTDataTag(ItemUtils.getItem(isPad ? Material.FIREWORK : Material.GOLD_PLATE,
-				"§7Es ist ein" + (isPad ? "" : "e"), isPad ? "§eJumpPad" : "§6Goldene Druckplatte"), "key", "jumppad");
+		ItemStack isPadItem = ItemUtils.setNBTDataTag(
+				ItemUtils.getItem(isPad ? Material.FIREWORK : Material.GOLD_PLATE,
+						isPad ? Language.get("paditem.name") : Language.get("plateitem.name"),
+						isPad ? Language.get("paditem.lore") : Language.get("plateitem.lore")),
+				"key", "jumppad");
 
-		ItemStack vector = ItemUtils.setNBTDataTag(ItemUtils.setDisplayName(rawRight, "§7Vektoreinstellungen"), "state",
-				"vector");
-		ItemStack block = ItemUtils.setNBTDataTag(ItemUtils.setDisplayName(rawDown, "§7Blockeinstellungen"), "state",
-				"block");
+		ItemStack vector = ItemUtils.setNBTDataTag(
+				ItemUtils.setDisplayName(rawRight, Language.get("vectorsettingitem")), "state", "vector");
+		ItemStack block = ItemUtils.setNBTDataTag(ItemUtils.setDisplayName(rawDown, Language.get("blocksettingitem")),
+				"state", "block");
 		ItemStack sound = ItemUtils.setNBTDataTag(SoundItems.getItem(metadata.getSound("sound")), "state", "sound");
 		ItemStack particle = ItemUtils.setNBTDataTag(EffectItems.getItem(metadata.getEffect("particle")), "state",
 				"particle");
+
+		ItemStack language = ItemUtils.setNBTDataTag(ItemUtils.getItem(Material.PAPER,
+				Language.get("languageitem.name"), JumpPads.getInstance().getLanguage().name()), "state", "languages");
 
 		if (state.equals("vector"))
 			vector = ItemUtils.glow(vector);
 		if (state.equals("block"))
 			block = ItemUtils.glow(block);
+		if (state.equals("languages"))
+			language = ItemUtils.glow(language);
 		if (state.equals("sound"))
 			sound = ItemUtils.glow(sound);
 		if (state.equals("particle"))
@@ -224,6 +255,7 @@ public class JumpPadsSettingListener implements Listener {
 		inventory.setItem(0, isPadItem);
 		inventory.setItem(2, vector);
 		inventory.setItem(3, block);
+		inventory.setItem(4, language);
 		inventory.setItem(5, sound);
 		inventory.setItem(6, particle);
 		updateSave(inventory, metadata, state, page);
@@ -234,7 +266,7 @@ public class JumpPadsSettingListener implements Listener {
 	public static void updateSave(Inventory inventory, JumpPadMetadata metadata, String state, int page) {
 		ItemStack save = ItemUtils.setNBTDataTag(
 				ItemUtils.getItem((lightSave ? Material.TRIPWIRE_HOOK : Material.REDSTONE_TORCH_ON),
-						(lightSave ? "§bSpeichert" : "§bSpeichern")),
+						(lightSave ? Language.get("savingitem") : Language.get("saveitem"))),
 				"location", JsonJumpPads.getStringByLocation(metadata.getLocation()), "type", "jumppad", "state", state,
 				"page", page);
 		inventory.setItem(8, save);
@@ -242,7 +274,8 @@ public class JumpPadsSettingListener implements Listener {
 
 	public static void updateSave(Inventory inventory) {
 		ItemStack save = ItemUtils.setType(
-				ItemUtils.setDisplayName(inventory.getItem(8), (lightSave ? "§bSpeichert" : "§bSpeichern")),
+				ItemUtils.setDisplayName(inventory.getItem(8),
+						(lightSave ? Language.get("savingitem") : Language.get("saveitem"))),
 				(lightSave ? Material.TRIPWIRE_HOOK : Material.REDSTONE_TORCH_ON));
 		inventory.setItem(8, save);
 	}
@@ -286,11 +319,11 @@ public class JumpPadsSettingListener implements Listener {
 				inventory.setItem(18 + i, itemStack);
 			}
 			if (page > 0)
-				inventory.setItem(36, ItemUtils.setNBTDataTag(ItemUtils.setDisplayName(rawLeft, "§7Vorherige Seite"),
-						"page", page - 1));
+				inventory.setItem(36, ItemUtils
+						.setNBTDataTag(ItemUtils.setDisplayName(rawLeft, Language.get("lastpage")), "page", page - 1));
 			if (list.size() - page * 18 > 18)
-				inventory.setItem(44, ItemUtils.setNBTDataTag(ItemUtils.setDisplayName(rawRight, "§7Nächste Seite"),
-						"page", page + 1));
+				inventory.setItem(44, ItemUtils
+						.setNBTDataTag(ItemUtils.setDisplayName(rawRight, Language.get("nextpage")), "page", page + 1));
 		}
 	}
 
@@ -317,6 +350,32 @@ public class JumpPadsSettingListener implements Listener {
 				EffectItems.list.values());
 	}
 
+	public static void updateLanguages(Inventory inventory, JumpPadMetadata metadata, int page) {
+		ItemStack selected = LanguageItems.getItem(JumpPads.getInstance().getLanguage());
+		List<ItemStack> list = Lists.newArrayList(LanguageItems.list.values());
+		if (page == 0 && list.size() <= 27) {
+			for (int i = 0; i < list.size(); i++) {
+				ItemStack itemStack = list.get(i);
+				if (itemStack.equals(selected))
+					itemStack = ItemUtils.glow(itemStack);
+				inventory.setItem(18 + i, itemStack);
+			}
+		} else {
+			for (int i = 0; i < 18 && i < list.size() - page * 18; i++) {
+				ItemStack itemStack = list.get(i + page * 18);
+				if (itemStack.equals(selected))
+					itemStack = ItemUtils.glow(itemStack);
+				inventory.setItem(18 + i, itemStack);
+			}
+			if (page > 0)
+				inventory.setItem(36, ItemUtils
+						.setNBTDataTag(ItemUtils.setDisplayName(rawLeft, Language.get("lastpage")), "page", page - 1));
+			if (list.size() - page * 18 > 18)
+				inventory.setItem(44, ItemUtils
+						.setNBTDataTag(ItemUtils.setDisplayName(rawRight, Language.get("nextpage")), "page", page + 1));
+		}
+	}
+
 	public static void updateLowerInventory(Inventory inventory, JumpPadMetadata metadata, String state) {
 		if (state == null)
 			state = metadata.getString("state");
@@ -328,7 +387,9 @@ public class JumpPadsSettingListener implements Listener {
 		} else if (state.equals("block")) {
 			updateBlock(inventory, metadata);
 			metadata.put("state", state);
-		} else if (state.equals("sound"))
+		} else if (state.equals("languages"))
+			updateLanguages(inventory, metadata, 0);
+		else if (state.equals("sound"))
 			updateSound(inventory, metadata, 0);
 		else if (state.equals("particle"))
 			updateParticle(inventory, metadata, 0);

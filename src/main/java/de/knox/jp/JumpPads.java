@@ -7,10 +7,12 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import de.knox.jp.events.JumpListener;
 import de.knox.jp.events.JumpPadsSettingListener;
-import de.knox.jp.utilities.JsonJumpPads;
-import de.knox.jp.utilities.JsonJumpPads.JumpPadMetadata;
+import de.knox.jp.json.JsonJumpPads;
+import de.knox.jp.json.JsonJumpPads.JumpPadMetadata;
+import de.knox.jp.utilities.Language;
 import de.knox.jp.utilities.PacketReader;
 import lombok.Getter;
+import lombok.Setter;
 import net.minecraft.server.v1_8_R3.BlockPosition;
 import net.minecraft.server.v1_8_R3.IChatBaseComponent;
 import net.minecraft.server.v1_8_R3.Packet;
@@ -28,6 +30,10 @@ public class JumpPads extends JavaPlugin {
 	@Getter
 	private PacketReader packetReader;
 
+	@Getter
+	@Setter
+	private Language language;
+
 	static {
 		PREFIX = "§7[§6JumpPad§7] ";
 	}
@@ -37,6 +43,12 @@ public class JumpPads extends JavaPlugin {
 
 		metadatas = new JsonJumpPads();
 		metadatas.load(getConfig().getString("jumppads"));
+
+		getConfig().options().copyDefaults(true);
+		getConfig().addDefault("language", "english");
+		saveConfig();
+
+		language = Language.valueOf(getConfig().getString("language").toUpperCase());
 
 		packetReader = new PacketReader() {
 			public void readPacket(Packet<?> packet, Player player) {
