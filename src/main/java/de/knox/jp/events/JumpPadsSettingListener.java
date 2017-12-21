@@ -95,6 +95,8 @@ public class JumpPadsSettingListener implements Listener {
 		if (event.getClickedBlock().getType() != Material.GOLD_PLATE)
 			return;
 		Inventory inventory = getInventory(event.getClickedBlock().getLocation());
+		if (!event.getPlayer().hasPermission("jumppad.options") && !event.getPlayer().isOp())
+			return;
 		event.getPlayer().openInventory(inventory);
 	}
 
