@@ -21,7 +21,7 @@ public enum Language {
 		add(DEUTSCH, "plateitem.lore", "§6Goldene Druckplatte");
 		add(DEUTSCH, "vectorsettingitem", "§7Vektoreinstellungen");
 		add(DEUTSCH, "blocksettingitem", "§7Blockeinstellungen");
-		add(ENGLISH, "languageitem.name", "§7Sprache:");
+		add(DEUTSCH, "languageitem.name", "§7Sprache:");
 		add(DEUTSCH, "saveitem", "§bSpeichern");
 		add(DEUTSCH, "savingitem", "§bSpeichert");
 		add(DEUTSCH, "nextpage", "§7Nächste Seite");

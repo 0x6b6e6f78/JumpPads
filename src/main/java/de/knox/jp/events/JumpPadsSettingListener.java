@@ -241,7 +241,7 @@ public class JumpPadsSettingListener implements Listener {
 				"particle");
 
 		ItemStack language = ItemUtils.setNBTDataTag(ItemUtils.getItem(Material.PAPER,
-				Language.get("languageitem.name"), JumpPads.getInstance().getLanguage().name()), "state", "languages");
+				Language.get("languageitem.name"), "  §e" + JumpPads.getInstance().getLanguage().name()), "state", "languages");
 
 		if (state.equals("vector"))
 			vector = ItemUtils.glow(vector);
