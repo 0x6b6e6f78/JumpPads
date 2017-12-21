@@ -9,6 +9,7 @@ import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -72,6 +73,12 @@ public class JumpPadsSettingListener implements Listener {
 	@EventHandler
 	public void playerQuitEvent(PlayerQuitEvent event) {
 		JumpPads.getInstance().getPacketReader().uninject(event.getPlayer());
+	}
+
+	@EventHandler
+	public void blockBreakEvent(BlockBreakEvent event) {
+		if (JumpPads.getInstance().getMetadatas().containsKey(event.getBlock().getLocation()))
+			JumpPads.getInstance().getMetadatas().remove(event.getBlock().getLocation());
 	}
 
 	@EventHandler
