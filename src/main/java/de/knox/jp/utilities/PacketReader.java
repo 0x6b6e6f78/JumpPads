@@ -4,13 +4,12 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
 import org.bukkit.entity.Player;
 
+import de.knox.jp.JumpPads;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
-import net.minecraft.server.v1_8_R3.Packet;
 
 public abstract class PacketReader {
 
@@ -23,16 +22,41 @@ public abstract class PacketReader {
 
 	public void inject(Player player) {
 		injected.add(player);
-		CraftPlayer cPlayer = (CraftPlayer) player;
-		channel = cPlayer.getHandle().playerConnection.networkManager.channel;
-		channel.pipeline().addAfter("decoder", "PacketInjector_" + player.getName(),
-				new MessageToMessageDecoder<Packet<?>>() {
-					protected void decode(ChannelHandlerContext arg0, Packet<?> packet, List<Object> arg2)
-							throws Exception {
-						arg2.add(packet);
-						readPacket(packet, player);
-					}
-				});
+
+		try {
+			Class<?> p = Class.forName(
+					"org.bukkit.craftbukkit." + JumpPads.getInstance().getNmsVersion() + ".entity.CraftPlayer");
+			Object cPlayer = p.cast(player);
+
+			Object handle = p.getMethod("getHandle").invoke(cPlayer);
+			Object playerConnection = handle.getClass().getField("playerConnection").get(handle);
+			Object networkManager = playerConnection.getClass().getField("networkManager").get(playerConnection);
+
+			Class<?> packetClass = Class.forName("net.minecraft.server." + JumpPads.getInstance().getNmsVersion() + ".Packet");
+			for (Field fields : networkManager.getClass().getFields()) {
+				if (fields.getType().getName().equals("io.netty.channel.Channel"))
+					channel = (Channel) fields.get(networkManager);
+			}
+			for (Field fields : networkManager.getClass().getDeclaredFields()) {
+				if (fields.getType().getName().equals("io.netty.channel.Channel"))
+					channel = (Channel) fields.get(networkManager);
+			}
+			channel.pipeline().addAfter("decoder", "PacketInjector_" + player.getName(),
+					new MessageToMessageDecoder<Object>() {
+						protected void decode(ChannelHandlerContext arg0, Object packet, List<Object> arg2)
+								throws Exception {
+							try {
+								packetClass.cast(packet);
+							} catch (Exception e) {
+								return;
+							}
+							arg2.add(packet);
+							readPacket(packet, player);
+						}
+					});
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void uninject(Player player) {
@@ -66,5 +90,5 @@ public abstract class PacketReader {
 		return null;
 	}
 
-	public abstract void readPacket(Packet<?> packet, Player player);
+	public abstract void readPacket(Object packet, Player player);
 }

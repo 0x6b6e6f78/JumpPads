@@ -13,12 +13,13 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 
 import de.knox.jp.JumpPads;
 import de.knox.jp.json.JsonJumpPads.JumpPadMetadata;
 import de.knox.jp.utilities.ItemUtils;
-import net.minecraft.server.v1_8_R3.BlockPosition;
+import de.knox.jp.utilities.Position;
 
 public class JumpListener implements Listener {
 
@@ -36,7 +37,8 @@ public class JumpListener implements Listener {
 
 		try {
 			Inventory inventory = player.getOpenInventory().getTopInventory();
-			if (ItemUtils.getNBTDataTag(inventory.getItem(8), "type").equals("jumppad"))
+			ItemStack slot8 = inventory.getItem(8).clone();
+			if (inventory != null && ItemUtils.getNBTDataTag(slot8, "type").equals("jumppad"))
 				return;
 		} catch (Exception e) {
 		}
@@ -53,9 +55,9 @@ public class JumpListener implements Listener {
 			double y = metadata.getInt("velocityY") * 1e-1d;
 			vector = player.getLocation().getDirection().multiply(velocity).setY(y);
 		} else {
-			BlockPosition blockPosition = metadata.getBlockPosition("block");
-			vector = new Vector(blockPosition.getX() - location.getBlockX(),
-					blockPosition.getY() - location.getBlockY(), blockPosition.getZ() - location.getBlockZ());
+			Position position = metadata.getPosition("block");
+			vector = new Vector(position.getX() - location.getBlockX(),
+					position.getY() - location.getBlockY(), position.getZ() - location.getBlockZ());
 		}
 
 		Bukkit.getScheduler().runTask(JumpPads.getInstance(), () -> {

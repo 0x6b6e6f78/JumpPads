@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.UUID;
 
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_8_R3.inventory.CraftItemStack;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -18,8 +16,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 
-import net.minecraft.server.v1_8_R3.NBTTagCompound;
-import net.minecraft.server.v1_8_R3.NBTTagString;
+import de.knox.jp.JumpPads;
 
 public class ItemUtils {
 
@@ -126,24 +123,80 @@ public class ItemUtils {
 	}
 
 	public static ItemStack setNBTDataTag(ItemStack stack, String key, Object value) {
-		net.minecraft.server.v1_8_R3.ItemStack nmsStack = CraftItemStack.asNMSCopy(stack);
-		NBTTagCompound compound = (nmsStack.hasTag()) ? nmsStack.getTag() : new NBTTagCompound();
-		compound.set(key, new NBTTagString(value.toString()));
-		return CraftItemStack.asBukkitCopy(nmsStack);
+		try {
+			Object nmsStack = Class.forName(
+					"org.bukkit.craftbukkit." + JumpPads.getInstance().getNmsVersion() + ".inventory.CraftItemStack")
+					.getMethod("asNMSCopy", ItemStack.class).invoke(null, stack);
+			Object nbtTagCompound = Class
+					.forName("net.minecraft.server." + JumpPads.getInstance().getNmsVersion() + ".NBTTagCompound");
+			Object compound = ((boolean) nmsStack.getClass().getMethod("hasTag").invoke(nmsStack))
+					? nmsStack.getClass().getMethod("getTag").invoke(nmsStack) : nbtTagCompound;
+			Class<?> nbtTabString = Class
+					.forName("net.minecraft.server." + JumpPads.getInstance().getNmsVersion() + ".NBTTagString");
+			Class<?> nbtBase = Class
+					.forName("net.minecraft.server." + JumpPads.getInstance().getNmsVersion() + ".NBTBase");
+
+			Object o = nbtTabString.newInstance();
+			Field field = nbtTabString.cast(o).getClass().getDeclaredField("data");
+			field.setAccessible(true);
+			field.set(o, value);
+
+			compound.getClass().getMethod("set", String.class, nbtBase).invoke(compound, key, o);
+
+			return (ItemStack) Class
+					.forName("org.bukkit.craftbukkit." + JumpPads.getInstance().getNmsVersion()
+							+ ".inventory.CraftItemStack")
+					.getMethod("asBukkitCopy", nmsStack.getClass()).invoke(null, nmsStack);
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 	public static ItemStack setNBTDataTag(ItemStack stack, Object... keysAndValues) {
-		net.minecraft.server.v1_8_R3.ItemStack nmsStack = CraftItemStack.asNMSCopy(stack);
-		NBTTagCompound compound = (nmsStack.hasTag()) ? nmsStack.getTag() : new NBTTagCompound();
-		for (int i = 0; i < keysAndValues.length;)
-			compound.set(keysAndValues[i++].toString(), new NBTTagString(keysAndValues[i++].toString()));
-		return CraftItemStack.asBukkitCopy(nmsStack);
+		try {
+			Object nmsStack = Class.forName(
+					"org.bukkit.craftbukkit." + JumpPads.getInstance().getNmsVersion() + ".inventory.CraftItemStack")
+					.getMethod("asNMSCopy", ItemStack.class).invoke(null, stack);
+			Object nbtTagCompound = Class
+					.forName("net.minecraft.server." + JumpPads.getInstance().getNmsVersion() + ".NBTTagCompound");
+			Object compound = ((boolean) nmsStack.getClass().getMethod("hasTag").invoke(nmsStack))
+					? nmsStack.getClass().getMethod("getTag").invoke(nmsStack) : nbtTagCompound;
+			Class<?> nbtTabString = Class
+					.forName("net.minecraft.server." + JumpPads.getInstance().getNmsVersion() + ".NBTTagString");
+			Class<?> nbtBase = Class
+					.forName("net.minecraft.server." + JumpPads.getInstance().getNmsVersion() + ".NBTBase");
+
+			for (int i = 0; i < keysAndValues.length;) {
+				String key = keysAndValues[i++].toString();
+				Object o = nbtTabString.newInstance();
+				Field field = nbtTabString.cast(o).getClass().getDeclaredField("data");
+				field.setAccessible(true);
+				field.set(o, keysAndValues[i++].toString());
+
+				compound.getClass().getMethod("set", String.class, nbtBase).invoke(compound, key, o);
+			}
+			return (ItemStack) Class
+					.forName("org.bukkit.craftbukkit." + JumpPads.getInstance().getNmsVersion()
+							+ ".inventory.CraftItemStack")
+					.getMethod("asBukkitCopy", nmsStack.getClass()).invoke(null, nmsStack);
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 	public static String getNBTDataTag(ItemStack stack, String key) {
-		net.minecraft.server.v1_8_R3.ItemStack nmsStack = CraftItemStack.asNMSCopy(stack);
-		NBTTagCompound compound = (nmsStack.hasTag()) ? nmsStack.getTag() : new NBTTagCompound();
-		return ((NBTTagString) compound.get(key)).a_();
+		try {
+			Object nmsStack = Class.forName(
+					"org.bukkit.craftbukkit." + JumpPads.getInstance().getNmsVersion() + ".inventory.CraftItemStack")
+					.getMethod("asNMSCopy", ItemStack.class).invoke(null, stack);
+			Object nbtTagCompound = Class
+					.forName("net.minecraft.server." + JumpPads.getInstance().getNmsVersion() + ".NBTTagCompound");
+			Object compound = ((boolean) nmsStack.getClass().getMethod("hasTag").invoke(nmsStack))
+					? nmsStack.getClass().getMethod("getTag").invoke(nmsStack) : nbtTagCompound;
+			return (String) compound.getClass().getMethod("getString", String.class).invoke(compound, key);
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 	public static ItemStack getSkullByGameProfile(GameProfile profile) {
@@ -161,8 +214,17 @@ public class ItemUtils {
 		return head;
 	}
 
-	public static ItemStack getUsingSkull(Player p) {
-		return getSkullByGameProfile(((CraftPlayer) p).getHandle().getProfile());
+	public static ItemStack getUsingSkull(Player player) {
+		try {
+			Class<?> p = Class.forName(
+					"org.bukkit.craftbukkit." + JumpPads.getInstance().getNmsVersion() + ".entity.CraftPlayer");
+			Object cPlayer = p.cast(player);
+			Object handle = p.getMethod("getHandle").invoke(cPlayer);
+			return getSkullByGameProfile(((GameProfile) handle.getClass().getMethod("getProfile").invoke(handle)));
+		} catch (Exception e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 
 	public static ItemStack getSkull(String value, String signature) {

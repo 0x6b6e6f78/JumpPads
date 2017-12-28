@@ -13,9 +13,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import de.knox.jp.json.JsonJumpPads.JumpPadMetadata;
+import de.knox.jp.utilities.Position;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import net.minecraft.server.v1_8_R3.BlockPosition;
 
 public class JsonJumpPads extends HashMap<Location, JumpPadMetadata> {
 	private static final long serialVersionUID = 6249342949571695741L;
@@ -31,8 +31,8 @@ public class JsonJumpPads extends HashMap<Location, JumpPadMetadata> {
 				ik++;
 				if (testObject(location, key)) {
 					Object value = "";
-					if ((value = get(location).get(key)) instanceof BlockPosition)
-						value = getStringByPostionJ((BlockPosition) value);
+					if ((value = get(location).get(key)) instanceof Position)
+						value = getStringByPostionJ((Position) value);
 					jsonBulder.append("{\"key\":" + key + ",\"value\":" + value + "}"
 							+ (ik != get(location).keySet().size() ? "," : ""));
 				}
@@ -67,7 +67,7 @@ public class JsonJumpPads extends HashMap<Location, JumpPadMetadata> {
 					Object value = null;
 					try {
 						JsonObject object = jsonMetadataObject.get("value").getAsJsonObject();
-						if (object.get("type").getAsString().equals("blockposition"))
+						if (object.get("type").getAsString().equals("position"))
 							value = getPostionByStringJ(object);
 					} catch (Exception e) {
 						value = jsonMetadataObject.get("value").getAsString();
@@ -110,18 +110,18 @@ public class JsonJumpPads extends HashMap<Location, JumpPadMetadata> {
 		return location;
 	}
 
-	public static BlockPosition getPostionByStringJ(JsonObject jsonObject) {
-		BlockPosition position;
-		int x = jsonObject.get("x").getAsInt();
-		int y = jsonObject.get("y").getAsInt();
-		int z = jsonObject.get("z").getAsInt();
-		position = new BlockPosition(x, y, z);
+	public static Position getPostionByStringJ(JsonObject jsonObject) {
+		Position position;
+		double x = jsonObject.get("x").getAsDouble();
+		double y = jsonObject.get("y").getAsDouble();
+		double z = jsonObject.get("z").getAsDouble();
+		position = new Position(x, y, z);
 		return position;
 	}
 
-	public static String getStringByPostionJ(BlockPosition position) {
+	public static String getStringByPostionJ(Position position) {
 		JsonObject o = new JsonObject();
-		o.addProperty("type", "blockposition");
+		o.addProperty("type", "position");
 		o.addProperty("x", position.getX());
 		o.addProperty("y", position.getY());
 		o.addProperty("z", position.getZ());
@@ -237,11 +237,11 @@ public class JsonJumpPads extends HashMap<Location, JumpPadMetadata> {
 			return (Location) ret;
 		}
 
-		public BlockPosition getBlockPosition(String key) {
+		public Position getPosition(String key) {
 			Object ret = get(key);
 			if (ret == null)
-				return new BlockPosition(0, 0, 0);
-			return (BlockPosition) ret;
+				return new Position(0, 0, 0);
+			return (Position) ret;
 		}
 
 		public Sound getSound(String key) {

@@ -5,7 +5,7 @@ import java.util.List;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.craftbukkit.v1_8_R3.entity.CraftPlayer;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -24,13 +24,12 @@ import de.knox.jp.json.JsonJumpPads;
 import de.knox.jp.json.JsonJumpPads.JumpPadMetadata;
 import de.knox.jp.utilities.ItemUtils;
 import de.knox.jp.utilities.Language;
+import de.knox.jp.utilities.Position;
 import de.knox.jp.utilities.Utils;
 import de.knox.jp.utilities.inventories.EffectItems;
 import de.knox.jp.utilities.inventories.LanguageItems;
 import de.knox.jp.utilities.inventories.SoundItems;
 import lombok.Getter;
-import net.minecraft.server.v1_8_R3.BlockPosition;
-import net.minecraft.server.v1_8_R3.PacketPlayOutOpenSignEditor;
 
 public class JumpPadsSettingListener implements Listener {
 
@@ -106,6 +105,7 @@ public class JumpPadsSettingListener implements Listener {
 		ItemStack stack;
 		JumpPadMetadata metadata;
 		ItemStack slot8;
+
 		try {
 			slot8 = event.getClickedInventory().getItem(8);
 			String type = ItemUtils.getNBTDataTag(slot8, "type");
@@ -170,9 +170,7 @@ public class JumpPadsSettingListener implements Listener {
 					}
 				}
 			} else if (state.equals("block")) {
-				((CraftPlayer) event.getWhoClicked()).getHandle().playerConnection
-						.sendPacket(new PacketPlayOutOpenSignEditor(
-								new BlockPosition(location.getBlockX(), location.getBlockY(), location.getBlockZ())));
+				JumpPads.sendSignPacket((Player) event.getWhoClicked(), location);
 			} else if (state.equals("sound") || state.equals("particle")) {
 				int page = Integer.parseInt(ItemUtils.getNBTDataTag(slot8, "page"));
 				try {
@@ -217,7 +215,7 @@ public class JumpPadsSettingListener implements Listener {
 	}
 
 	public static void updateBlock(Inventory inventory, JumpPadMetadata metadata) {
-		BlockPosition position = metadata.getBlockPosition("block");
+		Position position = metadata.getPosition("block");
 		ItemStack block = ItemUtils.setNBTDataTag(ItemUtils.getItem(Material.SIGN, "§7Block", "  X: " + position.getX(),
 				"  Y: " + position.getY(), "  Z: " + position.getZ()));
 
@@ -241,7 +239,8 @@ public class JumpPadsSettingListener implements Listener {
 				"particle");
 
 		ItemStack language = ItemUtils.setNBTDataTag(ItemUtils.getItem(Material.PAPER,
-				Language.get("languageitem.name"), "  §e" + JumpPads.getInstance().getLanguage().name()), "state", "languages");
+				Language.get("languageitem.name"), "  §e" + JumpPads.getInstance().getLanguage().name()), "state",
+				"languages");
 
 		if (state.equals("vector"))
 			vector = ItemUtils.glow(vector);
